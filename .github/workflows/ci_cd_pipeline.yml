@@ -1,0 +1,55 @@
+name: Database CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+  MYSQL_USER: ${{ secrets.MYSQL_USER }}
+  MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+  MYSQL_DATABASE: project_db
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mysql-connector-python
+        
+    - name: Install MySQL client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mysql-client
+        
+    - name: Create database and initial schema
+      run: |
+        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} < sql/01_create_database.sql
+        
+    - name: Add humidity column
+      run: |
+        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} < sql/02_add_humidity_column.sql
+        
+    - name: Seed sample data
+      run: |
+        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} < sql/03_seed_data.sql
+        
+    - name: Run concurrent queries
+      run: |
+        python scripts/multi_thread_queries.py
+        
+    - name: Validate database setup
+      run: |
+        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} -e "USE project_db; SHOW TABLES; DESCRIBE ClimateData; SELECT COUNT(*) FROM ClimateData;" 
