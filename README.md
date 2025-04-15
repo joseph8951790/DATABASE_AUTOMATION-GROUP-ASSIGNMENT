@@ -1,5 +1,7 @@
 # Database Automation Project
 
+**Workflow triggered: Testing GitHub Actions setup.**
+
 This project implements an automated database management system with CI/CD, monitoring, and performance optimization for a MySQL database.
 
 ## Project Structure
