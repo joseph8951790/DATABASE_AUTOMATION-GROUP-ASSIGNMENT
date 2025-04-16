@@ -58,32 +58,43 @@ class MySQLMonitor:
 
             # Get table metrics
             try:
+                # First, get list of tables in the database
                 cursor.execute("""
-                    SELECT 
-                        LOWER(t.TABLE_NAME) as table_name,
-                        COALESCE(t.TABLE_ROWS, 0) as table_rows,
-                        COALESCE(t.DATA_LENGTH, 0) as data_length,
-                        COALESCE(t.INDEX_LENGTH, 0) as index_length
-                    FROM information_schema.TABLES t
-                    WHERE t.TABLE_SCHEMA = %s
+                    SELECT TABLE_NAME 
+                    FROM information_schema.TABLES 
+                    WHERE TABLE_SCHEMA = %s
                 """, (self.config['database'],))
                 
-                result = cursor.fetchall()
-                if not result:
-                    metrics['errors'] = metrics.get('errors', []) + ["No tables found in database"]
-                else:
-                    metrics['tables'] = {}
-                    for row in result:
-                        try:
-                            metrics['tables'][row['table_name']] = {
-                                'rows': int(row['table_rows']),
-                                'data_size': int(row['data_length']),
-                                'index_size': int(row['index_length'])
-                            }
-                        except (KeyError, ValueError, TypeError) as e:
-                            metrics['errors'] = metrics.get('errors', []) + [
-                                f"Error processing table {row.get('table_name', 'unknown')}: {str(e)}"
-                            ]
+                tables = cursor.fetchall()
+                
+                for table in tables:
+                    table_name = table['TABLE_NAME']
+                    try:
+                        # Get row count
+                        cursor.execute(f"SELECT COUNT(*) as row_count FROM `{table_name}`")
+                        row_count = cursor.fetchone()['row_count']
+                        
+                        # Get data and index size
+                        cursor.execute("""
+                            SELECT 
+                                data_length as data_size,
+                                index_length as index_size
+                            FROM information_schema.TABLES
+                            WHERE table_schema = %s AND table_name = %s
+                        """, (self.config['database'], table_name))
+                        
+                        size_info = cursor.fetchone()
+                        
+                        metrics['tables'][table_name] = {
+                            'rows': row_count,
+                            'data_size': int(size_info['data_size'] or 0),
+                            'index_size': int(size_info['index_size'] or 0)
+                        }
+                    except Exception as e:
+                        metrics['errors'] = metrics.get('errors', []) + [
+                            f"Error getting metrics for table {table_name}: {str(e)}"
+                        ]
+                        
             except Exception as e:
                 metrics['errors'] = metrics.get('errors', []) + [f"Table metrics error: {str(e)}"]
 
@@ -118,6 +129,8 @@ class MySQLMonitor:
         print(f"- Global Status: {len(metrics.get('global_status', {}))} metrics")
         print(f"- Processes: {len(metrics.get('processes', {}))} states")
         print(f"- Tables: {len(metrics.get('tables', {}))} tables")
+        if 'error' in metrics:
+            print(f"- Error: {metrics['error']}")
         if 'errors' in metrics:
             print("- Errors:", len(metrics['errors']))
             for error in metrics['errors']:
@@ -134,11 +147,6 @@ class MySQLMonitor:
                 metrics = self.get_performance_metrics()
                 self.log_metrics(metrics)
                 print(f"Metrics logged at: {metrics['timestamp']}")
-                if 'error' in metrics:
-                    print(f"Error collecting metrics: {metrics['error']}")
-                if 'errors' in metrics:
-                    for error in metrics['errors']:
-                        print(f"Warning: {error}")
                 time.sleep(interval)
         except KeyboardInterrupt:
             print("\nMonitoring stopped by user")
