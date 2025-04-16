@@ -82,3 +82,5 @@ This project implements an automated database management system with CI/CD, moni
 ## Documentation
 
 For detailed documentation, please refer to the project report in the `docs` directory. 
+
+act --secret-file .secrets -P ubuntu-latest=catthehacker/ubuntu:act-latest 

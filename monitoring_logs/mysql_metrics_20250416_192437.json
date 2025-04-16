@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-04-16T19:24:37.834764",
+  "global_status": {
+    "Queries": "0",
+    "Slow_queries": "0",
+    "Threads_connected": "0",
+    "Bytes_received": "0",
+    "Bytes_sent": "0"
+  },
+  "processes": {},
+  "tables": {},
+  "error": "'table_name'"
+}
