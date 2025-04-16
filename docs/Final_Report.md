@@ -3,8 +3,10 @@
 ## Cover Page
 - **Project Title:** End-to-End Automated Database Management with Advanced Monitoring
 - **Course:** PROG8850 - Database Automation
-- **Student Name:** [Your Name]
-- **Student ID:** [Your ID]
+- **Team Members:**
+  1. Joseph Johnson Vettamvely (Student ID: 8951790)
+  2. Shiron Kurian (Student ID: 8951881)
+  3. Martin Johny (Student ID: 8945124)
 - **Submission Date:** April 15, 2025
 
 ## Table of Contents
@@ -34,7 +36,7 @@ This project implements a comprehensive automated database management system foc
 
 - **Security Implementation:**
   - Sensitive information stored in GitHub Secrets
-  - Database credentials managed securely
+  - Database credentials managed securely using .secrets file
   - Environment variables used in workflows
 
 - **Automated Deployment Process:**
@@ -46,21 +48,23 @@ This project implements a comprehensive automated database management system foc
 
 ### 2.2 Monitoring Implementation
 - **Custom Monitoring Solution:**
-  - Real-time metric collection
-  - Performance data logging
-  - Alert system implementation
+  - Real-time metric collection every 30 seconds
+  - Performance data logging in JSON format
+  - Robust error handling and reporting
+  - Configurable alert thresholds
 
 - **Metrics Monitored:**
-  - Query performance
-  - Connection counts
-  - Table statistics
-  - System resources
+  - Query performance (including slow queries)
+  - Connection counts and thread status
+  - Table statistics (rows, data size, index size)
+  - System resources (bytes sent/received)
 
 - **Alert Configuration:**
-  - Slow query detection
-  - Connection limit monitoring
-  - Table size alerts
-  - Email notification system
+  - Slow query detection (threshold: 10 slow queries)
+  - Connection limit monitoring (threshold: 20 connections)
+  - Table size alerts (threshold: 1M rows)
+  - Email notification system (configurable via .secrets)
+  - Alert logging to monitoring_logs/alerts.log
 
 ### 2.3 Performance Optimization
 - **Analysis of Current Performance:**
@@ -111,9 +115,9 @@ This project implements a comprehensive automated database management system foc
 
 ### 4.1 Project Achievements
 - Successfully implemented automated database deployment
-- Created comprehensive monitoring system
+- Created comprehensive monitoring system with error handling
 - Improved query performance through optimization
-- Established reliable alerting system
+- Established reliable alerting system with configurable thresholds
 
 ### 4.2 Recommendations
 1. Implement automated backup system
@@ -143,11 +147,24 @@ CREATE TABLE ClimateData (
 ### Appendix B: Sample Metrics
 ```json
 {
-    "timestamp": "2025-04-15T10:00:00",
+    "timestamp": "2025-04-16T19:20:08",
     "global_status": {
         "Queries": "1000",
         "Slow_queries": "5",
-        "Threads_connected": "10"
+        "Threads_connected": "10",
+        "Bytes_received": "15000",
+        "Bytes_sent": "45000"
+    },
+    "processes": {
+        "Sleep": "5",
+        "Query": "3"
+    },
+    "tables": {
+        "ClimateData": {
+            "rows": 500000,
+            "data_size": 25000000,
+            "index_size": 5000000
+        }
     }
 }
 ```

@@ -8,5 +8,8 @@ CREATE TABLE IF NOT EXISTS ClimateData (
     location VARCHAR(100) NOT NULL,
     record_date DATE NOT NULL,
     temperature FLOAT NOT NULL,
-    precipitation FLOAT NOT NULL
+    precipitation FLOAT NOT NULL,
+    humidity FLOAT NOT NULL,
+    INDEX idx_location_date (location, record_date),
+    INDEX idx_temperature (temperature)
 ); 
