@@ -6,15 +6,23 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
-  MYSQL_USER: ${{ secrets.MYSQL_USER }}
-  MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-  MYSQL_DATABASE: project_db
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: project_db
+          MYSQL_ROOT_PASSWORD: root_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
     
     steps:
     - uses: actions/checkout@v3
@@ -27,29 +35,69 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install mysql-connector-python
+        pip install mysql-connector-python pytest python-dotenv
+        
+    - name: Create .secrets file
+      run: |
+        echo "MYSQL_HOST=127.0.0.1" > .secrets
+        echo "MYSQL_USER=root" >> .secrets
+        echo "MYSQL_PASSWORD=root_password" >> .secrets
+        echo "MYSQL_DATABASE=project_db" >> .secrets
         
     - name: Install MySQL client
       run: |
         sudo apt-get update
         sudo apt-get install -y mysql-client
         
+    - name: Wait for MySQL
+      run: |
+        timeout 30s bash -c 'until mysql -h127.0.0.1 -uroot -proot_password -e "SELECT 1"; do sleep 1; done'
+        
     - name: Create database and initial schema
       run: |
-        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} < sql/01_create_database.sql
+        echo "Creating database and initial schema..."
+        mysql -h127.0.0.1 -uroot -proot_password < sql/01_create_database.sql
+        if [ $? -ne 0 ]; then
+          echo "Error creating database and schema"
+          mysql -h127.0.0.1 -uroot -proot_password -e "SHOW DATABASES; SHOW GRANTS;"
+          exit 1
+        fi
         
     - name: Add humidity column
       run: |
-        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} < sql/02_add_humidity_column.sql
+        echo "Adding humidity column..."
+        mysql -h127.0.0.1 -uroot -proot_password project_db < sql/02_add_humidity_column.sql
+        if [ $? -ne 0 ]; then
+          echo "Error adding humidity column"
+          mysql -h127.0.0.1 -uroot -proot_password project_db -e "SHOW CREATE TABLE ClimateData;"
+          exit 1
+        fi
         
     - name: Seed sample data
       run: |
-        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} < sql/03_seed_data.sql
+        echo "Seeding sample data..."
+        mysql -h127.0.0.1 -uroot -proot_password project_db < sql/03_seed_data.sql
+        if [ $? -ne 0 ]; then
+          echo "Error seeding data"
+          mysql -h127.0.0.1 -uroot -proot_password project_db -e "SELECT * FROM ClimateData LIMIT 5;"
+          exit 1
+        fi
         
     - name: Run concurrent queries
       run: |
+        echo "Running concurrent queries..."
         python scripts/multi_thread_queries.py
+        if [ $? -ne 0 ]; then
+          echo "Error running concurrent queries"
+          cat monitoring_logs/mysql_metrics_*.json || true
+          exit 1
+        fi
         
     - name: Validate database setup
       run: |
-        mysql -h${{ env.MYSQL_HOST }} -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }} -e "USE project_db; SHOW TABLES; DESCRIBE ClimateData; SELECT COUNT(*) FROM ClimateData;" 
+        echo "Validating database setup..."
+        mysql -h127.0.0.1 -uroot -proot_password project_db -e "SHOW TABLES; DESCRIBE ClimateData; SELECT COUNT(*) FROM ClimateData;"
+        if [ $? -ne 0 ]; then
+          echo "Error validating database setup"
+          exit 1
+        fi 
