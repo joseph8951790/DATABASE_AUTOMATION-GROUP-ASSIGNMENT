@@ -1,8 +1,18 @@
 # Database Automation Project
 
-**Workflow triggered: Testing GitHub Actions setup.**
+This project implements an end-to-end automated database management system with CI/CD pipeline, advanced monitoring, and performance optimization.
 
-This project implements an automated database management system with CI/CD, monitoring, and performance optimization for a MySQL database.
+## Features
+- Automated MySQL database deployment
+- CI/CD pipeline with GitHub Actions
+- Advanced monitoring with metrics collection
+- Performance optimization and alerts
+- Concurrent query testing
+
+## Test Update
+- Testing GitHub Actions workflow
+- Verifying MySQL service container
+- Checking monitoring metrics
 
 ## Project Structure
 
