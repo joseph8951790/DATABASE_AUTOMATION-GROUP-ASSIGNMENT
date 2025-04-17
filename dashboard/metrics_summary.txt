@@ -1,0 +1,18 @@
+MySQL Monitoring Summary Report
+=============================
+
+Monitoring Period: 2025-04-16 19:22:07.476951 to 2025-04-16 21:18:32.109766
+Total Samples: 287
+
+Latest Metrics:
+- Total Queries: 10052
+- Slow Queries: 0
+- Active Connections: 1
+- Bytes Received: 4130979
+- Bytes Sent: 562003
+
+Table Statistics:
+- climatedata:
+  * Rows: 15
+  * Data Size: 16384 bytes
+  * Index Size: 0 bytes
